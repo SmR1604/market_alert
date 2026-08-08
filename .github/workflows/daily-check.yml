@@ -1,0 +1,53 @@
+name: Market Alert Bot - Corrida diaria
+
+on:
+  schedule:
+    # Todos los horarios de GitHub Actions son en UTC.
+    # 22:30 UTC = 18:30 en Chile (UTC-4) durante horario de invierno.
+    # Ajusta la hora según tu zona horaria y cuándo cierra el mercado que te interesa.
+    - cron: "30 22 * * 1-5"  # Lunes a viernes (días de mercado)
+  workflow_dispatch: {}       # Permite ejecutarlo manualmente desde la pestaña "Actions"
+
+permissions:
+  contents: write  # necesario para poder guardar el historial de alertas de vuelta al repo
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar el bot
+        env:
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python main.py
+
+      - name: Guardar historial de alertas y cache de tickers
+        # El bot escribe en data/ para no repetir alertas ya enviadas.
+        # Como cada corrida de GitHub Actions arranca "en limpio", persistimos
+        # esos archivos haciendo commit de vuelta al propio repositorio.
+        run: |
+          git config user.name "market-alert-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          git diff --cached --quiet && echo "Sin cambios en data/, no se hace commit" || git commit -m "chore: actualizar historial de alertas [skip ci]"
+          git push

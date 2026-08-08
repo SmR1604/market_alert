@@ -1,0 +1,17 @@
+# Nunca subir credenciales reales
+.env
+
+# Entorno virtual de Python
+venv/
+.venv/
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Logs locales
+logs.txt
+*.log
+
+# Archivos del sistema
+.DS_Store
