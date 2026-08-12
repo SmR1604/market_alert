@@ -14,6 +14,7 @@ en un servidor). Ver README.md para instrucciones de ambos escenarios.
 import logging
 import sys
 
+from config import validate_config
 from sp500_tickers import get_sp500_tickers
 from data_fetcher import download_price_history
 from signal_detector import detect_signals
@@ -29,7 +30,7 @@ logger = logging.getLogger("main")
 
 def run():
     logger.info("=== Iniciando corrida del bot de alertas de mercado ===")
-
+    validate_config()
     tickers_meta = get_sp500_tickers()
     symbols = [t["symbol"] for t in tickers_meta]
 

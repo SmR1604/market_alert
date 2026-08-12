@@ -12,8 +12,8 @@ load_dotenv()  # Carga variables desde un archivo .env si existe (uso local)
 # --- Credenciales / secretos (nunca hardcodear estos valores) ---
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_HOST = os.getenv("SMTP_HOST") or "smtp.gmail.com"
+SMTP_PORT = int(os.getenv("SMTP_PORT") or "587")
 SMTP_USER = os.getenv("SMTP_USER")          # tu correo emisor
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")  # app password, no tu password normal
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USER)
@@ -34,7 +34,7 @@ VOLUME_LOOKBACK_DAYS = 20
 # --- Proveedor de IA usado para redactar el resumen ---
 # "groq"   -> gratis, usa Llama 3.3 70B vía Groq (bueno para probar el proyecto)
 # "claude" -> requiere ANTHROPIC_API_KEY de pago, mejor calidad de análisis
-AI_PROVIDER = os.getenv("AI_PROVIDER", "groq").lower()
+AI_PROVIDER = (os.getenv("AI_PROVIDER") or "groq").lower()
 
 CLAUDE_MODEL = "claude-sonnet-5"
 
@@ -53,3 +53,35 @@ TICKERS_CACHE_FILE = os.path.join(DATA_DIR, "sp500_tickers.json")
 ALERTS_HISTORY_FILE = os.path.join(DATA_DIR, "alerts_history.json")
 
 os.makedirs(DATA_DIR, exist_ok=True)
+
+def validate_config() -> None:
+    """
+    Verifica que las credenciales mínimas necesarias estén presentes ANTES de
+    arrancar el pipeline completo, para fallar rápido con un mensaje claro en
+    vez de un traceback críptico a mitad de la ejecución.
+    """
+    missing = []
+
+    if AI_PROVIDER == "groq" and not GROQ_API_KEY:
+        missing.append("GROQ_API_KEY (requerido porque AI_PROVIDER=groq)")
+    if AI_PROVIDER == "claude" and not ANTHROPIC_API_KEY:
+        missing.append("ANTHROPIC_API_KEY (requerido porque AI_PROVIDER=claude)")
+    if AI_PROVIDER not in ("groq", "claude"):
+        missing.append(f"AI_PROVIDER tiene un valor inválido: '{AI_PROVIDER}' (debe ser 'groq' o 'claude')")
+
+    if not SMTP_USER:
+        missing.append("SMTP_USER")
+    if not SMTP_PASSWORD:
+        missing.append("SMTP_PASSWORD")
+    if not EMAIL_TO:
+        missing.append("EMAIL_TO")
+
+    if missing:
+        detalle = "\n  - ".join(missing)
+        raise RuntimeError(
+            f"Faltan variables de entorno / secrets requeridos:\n  - {detalle}\n\n"
+            f"Si corres esto en GitHub Actions: revisa Settings → Secrets and "
+            f"variables → Actions, y confirma que los NOMBRES coincidan EXACTO "
+            f"(sensible a mayúsculas) con los que usa el workflow .github/workflows/daily-check.yml.\n"
+            f"Si corres esto en local: revisa tu archivo .env"
+        )
