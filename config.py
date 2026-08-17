@@ -39,7 +39,7 @@ AI_PROVIDER = (os.getenv("AI_PROVIDER") or "groq").lower()
 CLAUDE_MODEL = "claude-sonnet-5"
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 # --- Control de duplicados ---
 # No reenviar alerta del mismo ticker/regla si ya se envió hace menos de N días,
