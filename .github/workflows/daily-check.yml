@@ -43,11 +43,16 @@ jobs:
 
       - name: Guardar historial de alertas y cache de tickers
         # El bot escribe en data/ para no repetir alertas ya enviadas.
-        # Como cada corrida de GitHub Actions arranca "en limpio", persistimos
-        # esos archivos haciendo commit de vuelta al propio repositorio.
+        # Solo hacemos push si hubo un commit real, y pull --rebase antes
+        # por si el remoto avanzó (ej. editaste algo en GitHub) mientras corría el job.
         run: |
           git config user.name "market-alert-bot"
           git config user.email "actions@github.com"
           git add data/
-          git diff --cached --quiet && echo "Sin cambios en data/, no se hace commit" || git commit -m "chore: actualizar historial de alertas [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "Sin cambios en data/, no se hace commit ni push"
+          else
+            git commit -m "chore: actualizar historial de alertas [skip ci]"
+            git pull --rebase origin main
+            git push
+          fi
